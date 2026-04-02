@@ -114,7 +114,7 @@ AI 负责：
 ### 2. 孩子看板 - 许下心愿
 ![许下心愿](docs/screenshots/02_child_wish.png)
 
-### 3. 家长后台 - 心愿商城管理
+### 3. 家长后台 - 控制台
 ![心愿商城](docs/screenshots/03_parent_wishes.png)
 
 ### 4. 心愿详情
