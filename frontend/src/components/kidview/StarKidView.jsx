@@ -44,36 +44,41 @@ const StarKidView = ({ darkMode = false }) => {
         { day: 0, courses: [] },
       ];
       
-      // 2. 从 localStorage 获取课外班
-      const savedCourses = localStorage.getItem('extracurricularCourses');
-      let extraCourses = savedCourses ? JSON.parse(savedCourses) : [];
-      
-      // 3. 如果没有本地数据，使用默认课外班
-      if (extraCourses.length === 0) {
-        extraCourses = [
-          { id: 1, title: '高思数学', name: '高思数学', dayOfWeek: 1, startTime: '18:00', endTime: '20:30', location: '和盛大厦', icon: '📐', color: '#3B82F6' },
-          { id: 2, title: '厚海英语', name: '厚海英语', dayOfWeek: 3, startTime: '18:20', endTime: '20:20', location: '新中关', icon: '📖', color: '#10B981' },
-          { id: 3, title: '优才数学', name: '优才数学', dayOfWeek: 5, startTime: '17:30', endTime: '20:30', location: '知春大厦', icon: '📐', color: '#3B82F6' },
-          { id: 4, title: '羽毛球', name: '羽毛球', dayOfWeek: 0, startTime: '10:30', endTime: '12:00', location: '体育中心', icon: '🏸', color: '#F59E0B' },
-          { id: 5, title: '习墨写字', name: '习墨写字', dayOfWeek: 0, startTime: '17:20', endTime: '18:50', location: '书法教室', icon: '✍️', color: '#8B5CF6' },
-        ];
-        localStorage.setItem('extracurricularCourses', JSON.stringify(extraCourses));
+      // 2. 从 API 获取课外班
+      let extraCourses = [];
+      try {
+        const response = await fetch('/api/schedules');
+        const result = await response.json();
+        if (result.success && result.data) {
+          extraCourses = result.data.map(s => ({
+            id: s.id,
+            title: s.title,
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            location: s.location || '',
+            icon: s.subject === 'math' ? '📐' : s.subject === 'english' ? '📖' : s.subject === 'sports' ? '🏸' : s.subject === 'art' ? '✍️' : '📚',
+            color: s.color || '#60A5FA'
+          }));
+        }
+      } catch (e) {
+        console.error('获取课外班失败:', e);
       }
       
-      // 4. 标准化课外班数据
-      const normalizedExtra = extraCourses.map(c => ({
-        ...c,
-        title: c.title || c.name,
-        dayOfWeek: c.dayOfWeek !== undefined ? c.dayOfWeek : c.day,
-        startTime: c.startTime || '00:00',
-        location: c.location || '',
-        icon: c.icon || '📖',
-        color: c.color || '#60A5FA'
-      }));
+      // 3. 如果 API 无数据，使用默认
+      if (extraCourses.length === 0) {
+        extraCourses = [
+          { id: 1, title: '高思数学', dayOfWeek: 1, startTime: '18:00', endTime: '20:30', location: '和盛大厦', icon: '📐', color: '#3B82F6' },
+          { id: 2, title: '厚海英语', dayOfWeek: 3, startTime: '18:20', endTime: '20:20', location: '新中关', icon: '📖', color: '#10B981' },
+          { id: 3, title: '优才数学', dayOfWeek: 5, startTime: '17:30', endTime: '20:30', location: '知春大厦', icon: '📐', color: '#3B82F6' },
+          { id: 4, title: '羽毛球', dayOfWeek: 0, startTime: '10:30', endTime: '12:00', location: '体育中心', icon: '🏸', color: '#F59E0B' },
+          { id: 5, title: '习墨写字', dayOfWeek: 0, startTime: '17:20', endTime: '18:50', location: '书法教室', icon: '✍️', color: '#8B5CF6' },
+        ];
+      }
       
-      setCourses(normalizedExtra);
+      setCourses(extraCourses);
       
-      // 5. 保存学校课表到状态
+      // 4. 保存学校课表到状态
       window.schoolScheduleData = schoolSchedule;
     } catch (error) { 
       console.error('获取课程失败:', error); 
@@ -582,25 +587,7 @@ const StarKidView = ({ darkMode = false }) => {
               { key: 'incomplete_homework', name: '漏作业', icon: '📝', penalty: 10, type: 'negative' }
             ];
             
-            let habits;
-            if (savedRules) {
-              try {
-                const rules = JSON.parse(savedRules);
-                habits = Object.entries(rules).map(([key, h]) => ({
-                  key,
-                  name: h.name,
-                  time: h.type === 'positive' ? (h.reward + '⭐') : undefined,
-                  icon: h.icon,
-                  reward: h.reward || 0,
-                  penalty: Math.abs(h.penalty) || 0,
-                  type: h.type
-                }));
-              } catch (e) {
-                habits = defaultRules;
-              }
-            } else {
-              habits = defaultRules;
-            }
+            let habits = defaultRules;
             
             return habits.map(habit => {
               const status = habitStatus[habit.key];
@@ -635,8 +622,8 @@ const StarKidView = ({ darkMode = false }) => {
                           : 'bg-rose-100 border-2 border-rose-400'
                         : isNegative
                           ? darkMode
-                            ? 'bg-rose-900/30 border-2 border-rose-600 hover:border-rose-400'
-                            : 'bg-rose-50 border-2 border-rose-300 hover:border-rose-400'
+                            ? 'bg-slate-800/40 border-2 border-slate-600 hover:border-rose-400'
+                            : 'bg-white/40 border-2 border-slate-200 hover:border-rose-400'
                           : darkMode
                             ? 'bg-slate-800/50 border-2 border-slate-600 hover:border-slate-400'
                             : 'bg-white/60 border-2 border-amber-200 hover:border-amber-400'
@@ -651,11 +638,9 @@ const StarKidView = ({ darkMode = false }) => {
                       ? (darkMode ? 'text-emerald-300' : 'text-emerald-600')
                       : status === 'failed'
                         ? (darkMode ? 'text-rose-300' : 'text-rose-600')
-                        : isNegative
-                          ? (darkMode ? 'text-rose-400' : 'text-rose-500')
-                          : (darkMode ? 'text-slate-400' : 'text-slate-600')
+                        : (darkMode ? 'text-slate-400' : 'text-slate-500')
                   }`}>
-                    {status ? '点此撤销' : isNegative ? `-${habit.penalty}⭐` : habit.time}
+                    {status ? '点此撤销' : isNegative ? `${habit.penalty}⭐/次` : habit.time}
                   </div>
                   <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     status === 'completed' 
@@ -835,17 +820,16 @@ const StarKidView = ({ darkMode = false }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-medium truncate ${
-                        isPending 
-                          ? `${darkMode ? 'text-amber-300/70 line-through' : 'text-amber-600/70 line-through'}`
-                          : isApprovedThisWeek || approvedToday || isApproved
-                            ? `${darkMode ? 'text-emerald-300 line-through' : 'text-emerald-600 line-through'}`
-                            : isRejected
-                              ? `${darkMode ? 'text-rose-300/70 line-through' : 'text-rose-600/70 line-through'}`
-                              : `${darkMode ? 'text-white' : 'text-slate-800'}`
+                        isApprovedThisWeek || approvedToday || isApproved
+                          ? `${darkMode ? 'text-emerald-300 line-through' : 'text-emerald-600 line-through'}`
+                          : isRejected
+                            ? `${darkMode ? 'text-rose-300/70' : 'text-rose-600/70'}`
+                            : `${darkMode ? 'text-white' : 'text-slate-800'}`
                       }`}>
                         {assignment.title}
                       </span>
-                      {(isCompleted || isApprovedThisWeek || approvedToday) && renderApprovalBadge(assignment.approvalStatus)}
+                      {isPending && <span className={`ml-2 text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-amber-600/30 text-amber-300' : 'bg-amber-100 text-amber-600'}`}>待审核</span>}
+                      {(isApprovedThisWeek || approvedToday || isApproved) && renderApprovalBadge(assignment.approvalStatus)}
                     </div>
                     <div className={`text-xs mt-1 ${
                       isPending 
@@ -924,7 +908,7 @@ const StarKidView = ({ darkMode = false }) => {
       {/* 近期待办 Tab */}
       {activeTab === 'todos' && (
         <div className="px-4 space-y-2">
-          {todos.length > 0 ? todos.map(todo => {
+          {todos.filter(t => t.showOnKidBoard !== false && (t.status !== 'completed' || t.approvalStatus === 'pending') && t.approvalStatus !== 'approved').length > 0 ? todos.filter(t => t.showOnKidBoard !== false && (t.status !== 'completed' || t.approvalStatus === 'pending') && t.approvalStatus !== 'approved').map(todo => {
             const isCompleted = todo.status === 'completed';
             const isApproved = todo.approvalStatus === 'approved';
             const isPending = todo.approvalStatus === 'pending';
@@ -951,15 +935,14 @@ const StarKidView = ({ darkMode = false }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-medium truncate ${
-                        isPending 
-                          ? `${darkMode ? 'text-amber-300/70 line-through' : 'text-amber-600/70 line-through'}`
-                          : isCompleted && !isPending
-                            ? `${darkMode ? 'text-emerald-300' : 'text-emerald-600'}`
-                            : `${darkMode ? 'text-white' : 'text-slate-800'}`
+                        isCompleted
+                          ? `${darkMode ? 'text-emerald-300 line-through' : 'text-emerald-600 line-through'}`
+                          : `${darkMode ? 'text-white' : 'text-slate-800'}`
                       }`}>
                         {todo.title}
                       </span>
-                      {isCompleted && renderApprovalBadge(todo.approvalStatus)}
+                      {isPending && <span className={`ml-2 text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-amber-600/30 text-amber-300' : 'bg-amber-100 text-amber-600'}`}>待审核</span>}
+                      {isCompleted && isApproved && renderApprovalBadge(todo.approvalStatus)}
                     </div>
                     <div className={`text-xs mt-1 ${
                       isPending 
@@ -970,7 +953,7 @@ const StarKidView = ({ darkMode = false }) => {
                     </div>
                   </div>
                   
-                  {!isCompleted ? (
+                  {!isCompleted && !isPending ? (
                     <button 
                       onClick={() => toggleTodo(todo)}
                       className={`px-4 py-2 rounded-xl font-medium transition-all active:scale-95 ${
@@ -983,10 +966,7 @@ const StarKidView = ({ darkMode = false }) => {
                     </button>
                   ) : isPending ? (
                     <button 
-                      onClick={() => {
-                        // 撤销待审核的任务
-                        undoTodo(todo);
-                      }}
+                      onClick={() => undoTodo(todo)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-95 ${
                         darkMode
                           ? 'bg-rose-600/30 text-rose-300 hover:bg-rose-600/50'
@@ -995,12 +975,6 @@ const StarKidView = ({ darkMode = false }) => {
                     >
                       撤销
                     </button>
-                  ) : isApproved ? (
-                    <span className={`text-xs px-3 py-1.5 rounded-lg ${
-                      darkMode ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      +{todo.calculatedStars}⭐
-                    </span>
                   ) : null}
                 </div>
               </div>

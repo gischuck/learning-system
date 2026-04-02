@@ -49,7 +49,7 @@ const KidView = ({ darkMode, toggleTheme }) => {
         fifteenDaysLater.setDate(today.getDate() + 15);
         
         const reminders = result.data
-          .filter(t => t.status === 'pending' && t.dueDate)
+          .filter(t => t.status !== 'completed' && t.approvalStatus !== 'approved' && t.dueDate)
           .filter(t => {
             const dueDate = new Date(t.dueDate);
             return dueDate >= today && dueDate <= fifteenDaysLater;
@@ -307,7 +307,7 @@ const KidView = ({ darkMode, toggleTheme }) => {
           <div className={`lg:col-span-3 rounded-2xl p-4 md:p-6 shadow-sm border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
             <h3 className={`text-lg md:text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>📋 今日作业</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {assignments.length > 0 ? assignments.map(a => (
+              {assignments.filter(a => a.status !== 'completed').length > 0 ? assignments.filter(a => a.status !== 'completed').map(a => (
                 <div 
                   key={a.id} 
                   onClick={() => toggleAssignment(a.id)} 

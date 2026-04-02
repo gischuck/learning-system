@@ -36,38 +36,76 @@ const WishManagement = ({ darkMode = false }) => {
   };
 
   const handleApprove = async (wishId, starsRequired) => {
+    const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`/api/wishes/${wishId}/approve`, {
+      const response = await fetch(`/api/wishes/${wishId}/review`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ starsRequired })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'approved', starsRequired })
       });
       
       const result = await response.json();
       if (result.success) {
         fetchData();
+      } else {
+        alert(result.message || '审核失败');
       }
     } catch (error) {
       console.error('审核心愿失败:', error);
+      alert('审核心愿失败');
     }
   };
 
   const handleReject = async (wishId) => {
     if (!window.confirm('确定要拒绝这个心愿吗？')) return;
     
+    const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`/api/wishes/${wishId}`, {
+      const response = await fetch(`/api/wishes/${wishId}/review`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ status: 'rejected' })
       });
       
       const result = await response.json();
       if (result.success) {
         fetchData();
+      } else {
+        alert(result.message || '拒绝失败');
       }
     } catch (error) {
       console.error('拒绝心愿失败:', error);
+      alert('拒绝心愿失败');
+    }
+  };
+
+  const handleDeleteWish = async (wishId) => {
+    if (!window.confirm('确定要删除这个心愿吗？')) return;
+    
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`/api/wishes/${wishId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        fetchData();
+      } else {
+        alert(result.message || '删除失败');
+      }
+    } catch (error) {
+      console.error('删除心愿失败:', error);
+      alert('删除心愿失败');
     }
   };
 
@@ -320,6 +358,16 @@ const WishManagement = ({ darkMode = false }) => {
                 
                 <div className="text-center text-sm text-purple-500">
                   进度: {Math.min(100, Math.round((starBalance / wish.starsRequired) * 100))}%
+                </div>
+                
+                {/* 删除按钮 */}
+                <div className="mt-3 text-center">
+                  <button
+                    onClick={() => handleDeleteWish(wish.id)}
+                    className="px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition text-sm"
+                  >
+                    🗑️ 删除
+                  </button>
                 </div>
               </div>
             ))}

@@ -62,7 +62,7 @@ router.post('/', optionalAuth, async (req, res) => {
 });
 
 // 审核心愿（家长审核）
-router.put('/:id/review', authenticate, async (req, res) => {
+router.put('/:id/review', optionalAuth, async (req, res) => {
   const t = await sequelize.transaction();
   
   try {
@@ -77,7 +77,7 @@ router.put('/:id/review', authenticate, async (req, res) => {
     await wish.update({
       status,
       starsRequired: parseInt(starsRequired) || 0,
-      reviewedBy: req.user.id,
+      reviewedBy: req.user?.id || 1,
       reviewedAt: new Date()
     }, { transaction: t });
     
@@ -173,7 +173,7 @@ router.post('/:id/redeem', optionalAuth, async (req, res) => {
 });
 
 // 删除心愿
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', optionalAuth, async (req, res) => {
   try {
     const wish = await Wish.findByPk(req.params.id);
     if (!wish) {

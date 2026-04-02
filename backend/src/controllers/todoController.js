@@ -189,9 +189,9 @@ exports.update = async (req, res) => {
       });
     }
 
-    // 权限检查：未登录用户只能更新状态
+    // 权限检查：未登录用户只能更新状态和审核状态
     if (!req.user) {
-      const allowedFields = ['status'];
+      const allowedFields = ['status', 'approvalStatus'];
       const updateFields = Object.keys(req.body);
       const hasOtherFields = updateFields.some(f => !allowedFields.includes(f));
 
@@ -202,17 +202,22 @@ exports.update = async (req, res) => {
         });
       }
 
-      // 只能将状态改为completed
+      // 允许完成和撤销操作
       if (req.body.status === 'completed') {
         await todo.update({
           status: 'completed',
+          approvalStatus: req.body.approvalStatus || 'pending',
           completedAt: new Date()
         });
-      } else {
-        return res.status(403).json({
-          success: false,
-          message: '未登录用户只能完成待办'
+      } else if (req.body.status === 'pending' || req.body.status === 'active') {
+        // 撤销操作：恢复为未完成状态
+        await todo.update({
+          status: 'pending',
+          approvalStatus: req.body.approvalStatus || null,
+          completedAt: null
         });
+      } else {
+        await todo.update(req.body);
       }
     } else {
       // 已登录用户可以更新所有字段

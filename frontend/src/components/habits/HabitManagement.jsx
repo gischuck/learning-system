@@ -1,38 +1,62 @@
 import React, { useState, useEffect } from 'react';
 
 const HabitManagement = ({ darkMode = false }) => {
-  const [habitRules, setHabitRules] = useState(() => {
-    const saved = localStorage.getItem('habitRules');
-    return saved ? JSON.parse(saved) : {
-      early_sleep: { name: '早睡', icon: '🌙', reward: 6, penalty: -8, type: 'positive' },
-      early_wake: { name: '早起', icon: '☀️', reward: 8, penalty: -10, type: 'positive' },
-      pack_bag: { name: '收书包', icon: '🎒', reward: 2, penalty: -3, type: 'positive' },
-      play_game: { name: '玩游戏', icon: '🎮', reward: 0, penalty: -10, type: 'negative' },
-      watch_tv: { name: '偷看电视', icon: '📺', reward: 0, penalty: -5, type: 'negative' },
-      incomplete_homework: { name: '漏作业', icon: '📝', reward: 0, penalty: -10, type: 'negative' }
-    };
+  const [habitRules, setHabitRules] = useState({
+    early_sleep: { name: '早睡', icon: '🌙', reward: 6, penalty: -8, type: 'positive' },
+    early_wake: { name: '早起', icon: '☀️', reward: 8, penalty: -10, type: 'positive' },
+    pack_bag: { name: '收书包', icon: '🎒', reward: 2, penalty: -3, type: 'positive' },
+    play_game: { name: '玩游戏', icon: '🎮', reward: 0, penalty: -10, type: 'negative' },
+    watch_tv: { name: '偷看电视', icon: '📺', reward: 0, penalty: -5, type: 'negative' },
+    incomplete_homework: { name: '漏作业', icon: '📝', reward: 0, penalty: -10, type: 'negative' }
   });
   
   const [editingHabit, setEditingHabit] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newHabit, setNewHabit] = useState({ key: '', name: '', icon: '📋', reward: 0, penalty: -5, type: 'negative' });
 
+  // 加载习惯规则
   useEffect(() => {
-    localStorage.setItem('habitRules', JSON.stringify(habitRules));
-  }, [habitRules]);
+    const fetchHabitRules = async () => {
+      try {
+        const response = await fetch('/api/settings/habit_rules');
+        const result = await response.json();
+        if (result.success && result.data) {
+          setHabitRules(result.data);
+        }
+      } catch (error) {
+        console.error('获取习惯规则失败:', error);
+      }
+    };
+    fetchHabitRules();
+  }, []);
+
+  // 保存习惯规则到数据库
+  const saveHabitRules = async (newRules) => {
+    setHabitRules(newRules);
+    try {
+      await fetch('/api/settings/habit_rules', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newRules })
+      });
+    } catch (error) {
+      console.error('保存习惯规则失败:', error);
+    }
+  };
 
   const updateHabit = (key, field, value) => {
-    setHabitRules(prev => ({
-      ...prev,
-      [key]: { ...prev[key], [field]: value }
-    }));
+    const newRules = {
+      ...habitRules,
+      [key]: { ...habitRules[key], [field]: value }
+    };
+    saveHabitRules(newRules);
   };
 
   const deleteHabit = (key) => {
     if (!confirm(`确定删除"${habitRules[key]?.name}"吗？`)) return;
     const newRules = { ...habitRules };
     delete newRules[key];
-    setHabitRules(newRules);
+    saveHabitRules(newRules);
   };
 
   const addHabit = () => {
@@ -40,8 +64,8 @@ const HabitManagement = ({ darkMode = false }) => {
       alert('请填写完整信息');
       return;
     }
-    setHabitRules(prev => ({
-      ...prev,
+    const newRules = {
+      ...habitRules,
       [newHabit.key]: {
         name: newHabit.name,
         icon: newHabit.icon,
@@ -49,7 +73,8 @@ const HabitManagement = ({ darkMode = false }) => {
         penalty: parseInt(newHabit.penalty) || 0,
         type: newHabit.type
       }
-    }));
+    };
+    saveHabitRules(newRules);
     setShowAddModal(false);
     setNewHabit({ key: '', name: '', icon: '📋', reward: 0, penalty: -5, type: 'negative' });
   };

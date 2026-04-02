@@ -9,16 +9,43 @@ const Assignments = ({ darkMode = false }) => {
   const [loading, setLoading] = useState(true);
 
   // 星星规则设置
-  const [starSettings, setStarSettings] = useState(() => {
-    const saved = localStorage.getItem('william_star_settings');
-    return saved ? JSON.parse(saved) : {
-      extraHW: 5,      // 课外班作业
-      schoolHW: 3,     // 学校作业
-      competition: 20, // 竞赛
-      daily: 2         // 日常任务
-    };
+  const [starSettings, setStarSettings] = useState({
+    extraHW: 5,
+    schoolHW: 3,
+    competition: 20,
+    daily: 2
   });
   const [editingSettings, setEditingSettings] = useState(false);
+
+  // 加载星星设置
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/star_settings');
+        const result = await response.json();
+        if (result.success && result.data) {
+          setStarSettings(result.data);
+        }
+      } catch (error) {
+        console.error('获取星星设置失败:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // 保存星星设置到数据库
+  const saveStarSettings = async (newSettings) => {
+    setStarSettings(newSettings);
+    try {
+      await fetch('/api/settings/star_settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newSettings })
+      });
+    } catch (error) {
+      console.error('保存星星设置失败:', error);
+    }
+  };
 
   // 根据科目自动推荐星星数
   const getRecommendedStars = (subject, title) => {
@@ -207,8 +234,7 @@ const Assignments = ({ darkMode = false }) => {
                 value={starSettings.extraHW} 
                 onChange={e => {
                   const newSettings = { ...starSettings, extraHW: parseInt(e.target.value) || 5 };
-                  setStarSettings(newSettings);
-                  localStorage.setItem('william_star_settings', JSON.stringify(newSettings));
+                  saveStarSettings(newSettings);
                 }}
                 className={`w-full mt-1 px-3 py-2 border rounded-lg text-center font-bold text-lg ${
                   darkMode ? 'bg-slate-700 border-slate-600 text-amber-300' : 'border-amber-200 text-amber-700'
@@ -224,8 +250,7 @@ const Assignments = ({ darkMode = false }) => {
                 value={starSettings.schoolHW} 
                 onChange={e => {
                   const newSettings = { ...starSettings, schoolHW: parseInt(e.target.value) || 3 };
-                  setStarSettings(newSettings);
-                  localStorage.setItem('william_star_settings', JSON.stringify(newSettings));
+                  saveStarSettings(newSettings);
                 }}
                 className={`w-full mt-1 px-3 py-2 border rounded-lg text-center font-bold text-lg ${
                   darkMode ? 'bg-slate-700 border-slate-600 text-blue-300' : 'border-blue-200 text-blue-700'
@@ -241,8 +266,7 @@ const Assignments = ({ darkMode = false }) => {
                 value={starSettings.competition} 
                 onChange={e => {
                   const newSettings = { ...starSettings, competition: parseInt(e.target.value) || 20 };
-                  setStarSettings(newSettings);
-                  localStorage.setItem('william_star_settings', JSON.stringify(newSettings));
+                  saveStarSettings(newSettings);
                 }}
                 className={`w-full mt-1 px-3 py-2 border rounded-lg text-center font-bold text-lg ${
                   darkMode ? 'bg-slate-700 border-slate-600 text-pink-300' : 'border-pink-200 text-pink-700'
@@ -258,8 +282,7 @@ const Assignments = ({ darkMode = false }) => {
                 value={starSettings.daily} 
                 onChange={e => {
                   const newSettings = { ...starSettings, daily: parseInt(e.target.value) || 2 };
-                  setStarSettings(newSettings);
-                  localStorage.setItem('william_star_settings', JSON.stringify(newSettings));
+                  saveStarSettings(newSettings);
                 }}
                 className={`w-full mt-1 px-3 py-2 border rounded-lg text-center font-bold text-lg ${
                   darkMode ? 'bg-slate-600 border-slate-500 text-slate-300' : 'border-slate-200 text-slate-600'
