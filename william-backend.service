@@ -1,0 +1,19 @@
+[Unit]
+Description=William Learning System - Backend
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/.openclaw/workspace_william/system/backend
+Environment=DB_SYNC_MODE=none
+Environment=NODE_ENV=production
+Environment=PORT=3001
+ExecStart=/usr/bin/node src/app.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

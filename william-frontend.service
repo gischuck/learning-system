@@ -1,0 +1,17 @@
+[Unit]
+Description=William Learning System - Frontend
+After=network.target william-backend.service
+Wants=william-backend.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/.openclaw/workspace_william/system/frontend
+ExecStart=/usr/bin/npm run dev
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
